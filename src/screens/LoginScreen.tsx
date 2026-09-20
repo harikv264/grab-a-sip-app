@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { supabase } from "../supabase";
-import { toE164 } from "../api";
+import { COUNTRIES, DEFAULT_COUNTRY, combineE164 } from "../countries";
 import { theme } from "../theme";
 
 export function LoginScreen() {
+  const [dial, setDial] = useState(DEFAULT_COUNTRY.dial);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export function LoginScreen() {
 
   const onSubmit = async () => {
     setError(null);
-    const e164 = toE164(phone);
+    const e164 = combineE164(dial, phone);
     if (!e164 || !password) {
       setError("Enter your phone number and password.");
       return;
@@ -44,6 +46,28 @@ export function LoginScreen() {
         <Text style={styles.logo}>🥤</Text>
         <Text style={styles.title}>Grab A Sip</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
+
+        <Text style={styles.label}>Country</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+        >
+          {COUNTRIES.map((c) => {
+            const active = c.dial === dial;
+            return (
+              <TouchableOpacity
+                key={c.code}
+                onPress={() => setDial(c.dial)}
+                style={[styles.chip, active ? styles.chipActive : null]}
+              >
+                <Text style={[styles.chipText, active ? styles.chipTextActive : null]}>
+                  {c.flag} +{c.dial}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         <Text style={styles.label}>Phone number</Text>
         <TextInput
@@ -100,6 +124,17 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontSize: 16,
   },
+  chip: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  chipActive: { backgroundColor: theme.lime, borderColor: theme.lime },
+  chipText: { color: theme.muted, fontSize: 13, fontWeight: "600" },
+  chipTextActive: { color: theme.ink },
   error: { color: theme.berry, marginTop: 12, fontSize: 14 },
   button: {
     backgroundColor: theme.lime,
