@@ -10,6 +10,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Header } from "../components/Header";
+import { JuiceGlass } from "../components/JuiceGlass";
 import { api, apiJson } from "../api";
 import { theme } from "../theme";
 
@@ -75,6 +76,10 @@ export function RiderScreen() {
     }
   };
 
+  const routeDone = rows.filter((r) => r.status === "delivered").length;
+  const routeTotal = rows.length;
+  const routePct = routeTotal > 0 ? Math.round((routeDone / routeTotal) * 100) : 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       <Header title="Rider" subtitle="Your deliveries" />
@@ -82,6 +87,24 @@ export function RiderScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.muted} />}
       >
+        <View style={styles.hero}>
+          <JuiceGlass pct={routePct} color={theme.lime} garnish={theme.aqua} size={100} showPct />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroKicker}>TODAY&apos;S ROUTE</Text>
+            <Text style={styles.heroNum}>
+              {routeDone}
+              <Text style={styles.heroNumMuted}> / {routeTotal} done</Text>
+            </Text>
+            <Text style={styles.heroCopy}>
+              {routeTotal === 0
+                ? "No stops assigned yet today."
+                : routePct >= 100
+                ? "Route complete — glass full! 🎉"
+                : "Your glass fills with every drop you complete."}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.statRow}>
           <Stat n={stats?.deliveredToday ?? 0} l="Today" color={theme.lime} />
           <Stat n={stats?.deliveredThisWeek ?? 0} l="This week" />
@@ -144,6 +167,21 @@ function Stat({ n, l, color }: { n: number; l: string; color?: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.ink, paddingTop: 44 },
   content: { padding: 20 },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: theme.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 16,
+    marginBottom: 14,
+  },
+  heroKicker: { color: theme.muted, fontSize: 10, letterSpacing: 1, fontWeight: "700" },
+  heroNum: { color: theme.text, fontSize: 26, fontWeight: "800", marginTop: 4 },
+  heroNumMuted: { color: theme.muted, fontSize: 15, fontWeight: "700" },
+  heroCopy: { color: theme.muted, fontSize: 12, marginTop: 6, lineHeight: 17 },
   statRow: { flexDirection: "row", gap: 10 },
   stat: { flex: 1, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, alignItems: "center" },
   statN: { color: theme.text, fontSize: 22, fontWeight: "800" },

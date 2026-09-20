@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native";
 import { Header } from "../components/Header";
+import { JuiceGlass } from "../components/JuiceGlass";
 import { apiJson } from "../api";
-import { theme } from "../theme";
+import { theme, planColors, MONTHLY_BOXES } from "../theme";
 
 type Sub = { id: string; planName: string; price: number; status: string; pauseDaysUsed: number };
 type Delivery = { id: string; date: string; status: string };
@@ -58,6 +59,11 @@ export function CustomerScreen() {
     .filter((d) => d.status === "delivered" || d.status === "failed")
     .slice(0, 8);
 
+  const delivered = summary?.deliveredThisMonth ?? 0;
+  const monthPct = Math.min(100, Math.round((delivered / MONTHLY_BOXES) * 100));
+  const activeSubs = subs.filter((s) => s.status === "active");
+  const hero = planColors(activeSubs[0]?.planName ?? subs[0]?.planName);
+
   return (
     <SafeAreaView style={styles.safe}>
       <Header title="Grab A Sip" subtitle="Your deliveries" />
@@ -65,6 +71,23 @@ export function CustomerScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.muted} />}
       >
+        {/* Hero: this month's glass filling up */}
+        <View style={styles.hero}>
+          <JuiceGlass pct={monthPct} color={hero.fill} garnish={hero.garnish} size={116} showPct />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroKicker}>YOUR MONTH, FILLING UP</Text>
+            <Text style={styles.heroNum}>
+              {delivered}
+              <Text style={styles.heroNumMuted}> / {MONTHLY_BOXES} boxes</Text>
+            </Text>
+            <Text style={styles.heroCopy}>
+              {monthPct >= 100
+                ? "Full glass! A complete month of freshness. 🎉"
+                : `${MONTHLY_BOXES - delivered} more sips to a full month.`}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.statRow}>
           <Stat n={summary?.activeSubscriptions ?? 0} l="Plans" color={theme.lime} />
           <Stat n={summary?.deliveredThisMonth ?? 0} l="This month" />
@@ -75,17 +98,22 @@ export function CustomerScreen() {
         {subs.length === 0 ? (
           <Empty text="No subscriptions yet." />
         ) : (
-          subs.map((s) => (
-            <View key={s.id} style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{s.planName}</Text>
-                <Text style={styles.cardSub}>
-                  ₹{s.price.toLocaleString("en-IN")}/mo · pauses {s.pauseDaysUsed}/5
-                </Text>
+          subs.map((s) => {
+            const c = planColors(s.planName);
+            const subPct = s.status === "cancelled" ? 0 : monthPct;
+            return (
+              <View key={s.id} style={styles.card}>
+                <JuiceGlass pct={subPct} color={c.fill} garnish={c.garnish} size={48} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.cardTitle}>{s.planName}</Text>
+                  <Text style={styles.cardSub}>
+                    ₹{s.price.toLocaleString("en-IN")}/mo · pauses {s.pauseDaysUsed}/5
+                  </Text>
+                </View>
+                <Badge status={s.status} />
               </View>
-              <Badge status={s.status} />
-            </View>
-          ))
+            );
+          })
         )}
 
         {upcoming.length > 0 && (
@@ -143,6 +171,21 @@ function Empty({ text }: { text: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.ink, paddingTop: 44 },
   content: { padding: 20 },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: theme.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 16,
+    marginBottom: 14,
+  },
+  heroKicker: { color: theme.muted, fontSize: 10, letterSpacing: 1, fontWeight: "700" },
+  heroNum: { color: theme.text, fontSize: 26, fontWeight: "800", marginTop: 4 },
+  heroNumMuted: { color: theme.muted, fontSize: 15, fontWeight: "700" },
+  heroCopy: { color: theme.muted, fontSize: 12, marginTop: 6, lineHeight: 17 },
   statRow: { flexDirection: "row", gap: 10 },
   stat: { flex: 1, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, alignItems: "center" },
   statN: { color: theme.text, fontSize: 20, fontWeight: "800" },
