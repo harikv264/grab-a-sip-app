@@ -15,8 +15,10 @@ import { COUNTRIES, DEFAULT_COUNTRY, combineE164 } from "../countries";
 import { theme } from "../theme";
 
 export function LoginScreen() {
+  const [mode, setMode] = useState<"phone" | "email">("phone");
   const [dial, setDial] = useState(DEFAULT_COUNTRY.dial);
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,12 +26,20 @@ export function LoginScreen() {
   const onSubmit = async () => {
     setError(null);
     const e164 = combineE164(dial, phone);
-    if (!e164 || !password) {
-      setError("Enter your phone number and password.");
+    if (mode === "email" ? !email.trim() : !e164) {
+      setError(mode === "email" ? "Enter your email and password." : "Enter your phone number and password.");
+      return;
+    }
+    if (!password) {
+      setError("Enter your password.");
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ phone: e164, password });
+    const creds =
+      mode === "email"
+        ? { email: email.trim(), password }
+        : { phone: e164 as string, password };
+    const { error } = await supabase.auth.signInWithPassword(creds);
     if (error) {
       setError(error.message || "Sign in failed.");
       setLoading(false);
@@ -47,38 +57,68 @@ export function LoginScreen() {
         <Text style={styles.title}>Grab A Sip</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
 
-        <Text style={styles.label}>Country</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
-        >
-          {COUNTRIES.map((c) => {
-            const active = c.dial === dial;
-            return (
-              <TouchableOpacity
-                key={c.code}
-                onPress={() => setDial(c.dial)}
-                style={[styles.chip, active ? styles.chipActive : null]}
-              >
-                <Text style={[styles.chipText, active ? styles.chipTextActive : null]}>
-                  {c.flag} +{c.dial}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {mode === "phone" ? (
+          <>
+            <Text style={styles.label}>Country</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+            >
+              {COUNTRIES.map((c) => {
+                const active = c.dial === dial;
+                return (
+                  <TouchableOpacity
+                    key={c.code}
+                    onPress={() => setDial(c.dial)}
+                    style={[styles.chip, active ? styles.chipActive : null]}
+                  >
+                    <Text style={[styles.chipText, active ? styles.chipTextActive : null]}>
+                      {c.flag} +{c.dial}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-        <Text style={styles.label}>Phone number</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="98765 43210"
-          placeholderTextColor={theme.dim}
-          keyboardType="phone-pad"
-          autoCapitalize="none"
-        />
+            <Text style={styles.label}>Phone number</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="98765 43210"
+              placeholderTextColor={theme.dim}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+            />
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={theme.dim}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </>
+        )}
+
+        <TouchableOpacity
+          onPress={() => {
+            setMode(mode === "phone" ? "email" : "phone");
+            setError(null);
+          }}
+          style={{ marginTop: 8 }}
+        >
+          <Text style={styles.toggle}>
+            {mode === "phone" ? "Use email instead" : "Use phone instead"}
+          </Text>
+        </TouchableOpacity>
         <Text style={styles.label}>Password</Text>
         <TextInput
           style={styles.input}
@@ -135,6 +175,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: theme.lime, borderColor: theme.lime },
   chipText: { color: theme.muted, fontSize: 13, fontWeight: "600" },
   chipTextActive: { color: theme.ink },
+  toggle: { color: theme.lime, fontSize: 13, fontWeight: "600" },
   error: { color: theme.berry, marginTop: 12, fontSize: 14 },
   button: {
     backgroundColor: theme.lime,
