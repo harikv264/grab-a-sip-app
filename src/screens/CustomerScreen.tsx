@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native
 import { SafeAreaView } from "react-native";
 import { Header } from "../components/Header";
 import { JuiceGlass } from "../components/JuiceGlass";
+import { CountUp } from "../components/CountUp";
 import { apiJson } from "../api";
 import { theme, planColors, MONTHLY_BOXES } from "../theme";
 
@@ -148,7 +149,11 @@ export function CustomerScreen() {
 function Stat({ n, text, l, color }: { n?: number; text?: string; l: string; color?: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statN, color ? { color } : null]}>{text ?? n}</Text>
+      {text !== undefined ? (
+        <Text style={[styles.statN, color ? { color } : null]}>{text}</Text>
+      ) : (
+        <CountUp value={n ?? 0} style={[styles.statN, color ? { color } : null]} />
+      )}
       <Text style={styles.statL}>{l}</Text>
     </View>
   );

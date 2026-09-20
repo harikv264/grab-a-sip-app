@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Header } from "../components/Header";
 import { JuiceGlass } from "../components/JuiceGlass";
+import { CountUp } from "../components/CountUp";
 import { api, apiJson } from "../api";
 import { theme } from "../theme";
 
@@ -158,7 +159,7 @@ export function RiderScreen() {
 function Stat({ n, l, color }: { n: number; l: string; color?: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statN, color ? { color } : null]}>{n}</Text>
+      <CountUp value={n} style={[styles.statN, color ? { color } : null]} />
       <Text style={styles.statL}>{l}</Text>
     </View>
   );
